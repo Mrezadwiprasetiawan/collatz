@@ -1,27 +1,43 @@
+#include <matplot/matplot.h>
+
 #include <collatz_cube.hxx>
 #include <cstdint>
 #include <iostream>
 #include <string>
 #include <string_view>
 
+#include "matplot/freestanding/plot.h"
+
 using U64 = uint64_t;
 
 static void print_help(const char *prog) {
-  std::cerr <<
-    "Usage:\n"
-    "  " << prog << " tensor [Z] [Y] [X]      Print tensor values (default Z=Y=X=5)\n"
-    "  " << prog << " path   [FROM] [TO]       Print Collatz paths for seeds FROM..TO (default 1..5)\n"
-    "  " << prog << " all    [Z] [Y] [X]       Both tensor and paths, seeds 1..Z\n"
-    "  " << prog << " -h | --help              Show this help\n"
-    "\n"
-    "Options:\n"
-    "  Z, Y, X     Tensor dimensions (uint64, Z=depth, Y=row, X=col)\n"
-    "  FROM, TO    Seed range inclusive (uint64, FROM >= 1)\n"
-    "\n"
-    "Examples:\n"
-    "  " << prog << " tensor 3 4 5\n"
-    "  " << prog << " path 1 20\n"
-    "  " << prog << " all 6\n";
+  std::cerr << "Usage:\n"
+               "  "
+            << prog
+            << " tensor [Z] [Y] [X]      Print tensor values (default Z=Y=X=5)\n"
+               "  "
+            << prog
+            << " path   [FROM] [TO]       Plot Collatz paths for seeds FROM..TO (default 1..5)\n"
+               "  "
+            << prog << " PATH [SEED]      Plot Collatz path only for this seed\n  " << prog
+            << " all    [Z] [Y] [X]       Both tensor and paths, seeds 1..Z\n"
+               "  "
+            << prog
+            << " -h | --help              Show this help\n"
+               "\n"
+               "Options:\n"
+               "  Z, Y, X     Tensor dimensions (uint64, Z=depth, Y=row, X=col)\n"
+               "  FROM, TO    Seed range inclusive (uint64, FROM >= 1)\n"
+               "\n"
+               "Examples:\n"
+               "  "
+            << prog
+            << " tensor 3 4 5\n"
+               "  "
+            << prog
+            << " path 1 20\n"
+               "  "
+            << prog << " all 6\n";
 }
 
 static void do_tensor(U64 Z, U64 Y, U64 X) {
@@ -38,12 +54,18 @@ static void do_tensor(U64 Z, U64 Y, U64 X) {
 }
 
 static void do_path(U64 from, U64 to) {
+  using namespace std;
+  vector<double> z, y, x;
   for (U64 n = from; n <= to; ++n) {
     std::cout << "seed = " << n << '\n';
-    for (auto i : CollatzCube<U64, U64>::get_path_index_from_seed(n))
-      std::cout << i.z << ',' << i.y << ',' << i.x << '\n';
-    std::cout << '\n';
+    for (auto i : CollatzCube<U64, U64>::get_path_index_from_seed(n)) {
+      z.push_back(i.z);
+      y.push_back(i.y);
+      x.push_back(i.x);
+    }
   }
+  matplot::stem3(x, y, z);
+  matplot::show();
 }
 
 int main(int argc, const char **argv) {
@@ -64,9 +86,19 @@ int main(int argc, const char **argv) {
 
   } else if (mode == "path") {
     U64 from = argc > 2 ? stoull(argv[2]) : 1;
-    U64 to   = argc > 3 ? stoull(argv[3]) : 5;
-    if (from < 1) { cerr << "Error: FROM must be >= 1\n"; return 1; }
-    if (from > to) { cerr << "Error: FROM must be <= TO\n"; return 1; }
+    if (argc > 3) stoull(argv[3]);
+    else {
+      do_path(from, from);
+      return 0;
+    }
+    if (from < 1) {
+      cerr << "Error: FROM must be >= 1\n";
+      return 1;
+    }
+    if (from > to) {
+      cerr << "Error: FROM must be <= TO\n";
+      return 1;
+    }
     do_path(from, to);
 
   } else if (mode == "all") {
@@ -74,7 +106,6 @@ int main(int argc, const char **argv) {
     U64 Y = argc > 3 ? stoull(argv[3]) : 5;
     U64 X = argc > 4 ? stoull(argv[4]) : 5;
     do_tensor(Z, Y, X);
-    do_path(1, Z);
 
   } else {
     cerr << "Error: unknown mode '" << mode << "'\n\n";

@@ -7,7 +7,7 @@
 template <std::integral I>
 struct Pos3 {
   I z, y, x;
-  Pos3(I z, I y, I x):z(z),y(y),x(x){}
+  Pos3(I z, I y, I x) : z(z), y(y), x(x) {}
 };
 
 template <int p>
@@ -36,10 +36,10 @@ struct CollatzCube {
   static std::vector<Pos3<Id>> get_path_index_from_seed(V k) {
     std::vector<Pos3<Id>> res;
     while (k != 1) {
-      Id v2k    = v_adic<2>(k);
-      Id v3k    = v_adic<3>(k);
-      Id v2pow  = int_pow<Id>(2, v2k);
-      Id v3pow  = int_pow<Id>(3, v3k);
+      Id v2k   = v_adic<2>(k);
+      Id v3k   = v_adic<3>(k);
+      Id v2pow = int_pow<Id>(2, v2k);
+      Id v3pow = int_pow<Id>(3, v3k);
 
       Id row    = v2k;
       Id col    = v3k;
@@ -53,8 +53,9 @@ struct CollatzCube {
       }
       res.push_back(Pos3<Id>(depth, row, col));
 
-      k = z_seed * int_pow<Id>(3, col + 1) - 1;
-      while (!(k & 1)) k >>= 1;
+      k     = z_seed * int_pow<Id>(3, col + 1) - 1;
+      v2k   = v_adic<2>(k);
+      k   >>= v2k;
       ++k;
       k >>= 1;
     }
