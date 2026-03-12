@@ -86,7 +86,7 @@ int main(int argc, const char **argv) {
 
   } else if (mode == "path") {
     U64 from = argc > 2 ? stoull(argv[2]) : 1;
-    if (argc > 3) stoull(argv[3]);
+    if (argc > 3) to = stoull(argv[3]);
     else {
       do_path(from, from);
       return 0;
