@@ -1,6 +1,6 @@
 #pragma once
 // ═══════════════════════════════════════════════════════════════════
-//  arrowplot.hpp  —  header-only 3D geometry library
+//  arrowplot.hxx  —  header-only 3D geometry library
 //
 //  Produces raw triangle mesh data (flat float arrays, 7 floats/vert:
 //  x y z r g b a) for:
@@ -75,6 +75,12 @@ struct Config {
 
     // Y axis: false = math Y-up, true = Y-down
     bool  yDown          = false;
+
+    // Translate all geometry after NDC mapping.
+    // Default {-0.5, -0.5, -0.5} shifts plot into negative space.
+    float offsetX = -0.5f;
+    float offsetY = -0.5f;
+    float offsetZ = -0.5f;
 };
 
 // ──────────────────────────── colours ───────────────────────────
@@ -144,8 +150,12 @@ public:
         std::vector<Vec3> ndc = toNDC(cfg);
         Mesh mesh;
 
-        for (auto& p : ndc)
-            buildSphere(mesh.sphereVerts, p, cfg, col);
+        for (size_t i = 0; i < ndc.size(); ++i) {
+            float t = (ndc.size() > 1) ? (float)i / (float)(ndc.size()-1) : 0.f;
+            // yellow (1,1,0) → red (1,0,0)
+            float R = 1.f, G = 1.f - t, B = 0.f, A = col.nodeA;
+            buildSphere(mesh.sphereVerts, ndc[i], cfg, R, G, B, A);
+        }
 
         for (size_t i = 0; i+1 < ndc.size(); ++i)
             buildArrow(mesh, ndc[i], ndc[i+1], cfg, col);
@@ -179,20 +189,20 @@ private:
         std::vector<Vec3> out;
         for (auto& p : pts_)
             out.push_back({
-                map(p.x, minX, maxX, false),
-                map(p.y, minY, maxY, cfg.yDown),
-                map(p.z, minZ, maxZ, false)
+                map(p.x, minX, maxX, false)  + cfg.offsetX,
+                map(p.y, minY, maxY, cfg.yDown) + cfg.offsetY,
+                map(p.z, minZ, maxZ, false)  + cfg.offsetZ
             });
         return out;
     }
 
     // ── sphere (UV sphere, triangle list) ───────────────────────
     void buildSphere(std::vector<float>& buf, Vec3 c,
-                     const Config& cfg, const ColourScheme& col) const {
+                     const Config& cfg,
+                     float R, float G, float B, float A) const {
         float r = cfg.nodeRadius;
         int stacks = cfg.sphereStacks;
         int slices = cfg.sphereSlices;
-        float R=col.nodeR, G=col.nodeG, B=col.nodeB, A=col.nodeA;
 
         // precompute ring positions
         // stack 0 = south pole, stack stacks = north pole
@@ -312,3 +322,4 @@ private:
 };
 
 } // namespace ap
+
