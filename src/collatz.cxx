@@ -1,12 +1,17 @@
-#include <matplot/matplot.h>
+#include <qmainwindow.h>
 
+#include <ArrowPlotWidget.hxx>
+#include <QApplication>
+#include <QLabel>
+#include <QMainWindow>
+#include <QSurfaceFormat>
+#include <arrowplot.hxx>
 #include <collatz_cube.hxx>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <string>
 #include <string_view>
-
-#include "matplot/freestanding/plot.h"
 
 using U64 = uint64_t;
 
@@ -55,17 +60,55 @@ static void do_tensor(U64 Z, U64 Y, U64 X) {
 
 static void do_path(U64 from, U64 to) {
   using namespace std;
+  QSurfaceFormat fmt;
+  fmt.setVersion(3, 3);
+  fmt.setProfile(QSurfaceFormat::CoreProfile);
+  fmt.setSamples(4);
+  QSurfaceFormat::setDefaultFormat(fmt);
+
+  int          dargc = 1;
+  char       **dargv = {};
+  QApplication app(dargc, dargv);
+  QScreen     *screen       = QGuiApplication::primaryScreen();
+  int          screenWidth  = screen->geometry().width();
+  int          screenHeight = screen->geometry().height();
+  QMainWindow  w;
+  w.resize(screenWidth, screenHeight);
+  auto widget = new ArrowPlotWidget(&w);
+  w.setCentralWidget(widget);
+
+  ap::Config cfg;
+  cfg.nodeRadius   = 0.05f;
+  cfg.sphereStacks = 16;
+  cfg.sphereSlices = 24;
+  cfg.shaftRadius  = 0.012f;
+  cfg.shaftSlices  = 14;
+  cfg.headLength   = 0.07f;
+  cfg.headRadius   = 0.032f;
+  cfg.headSlices   = 20;
+  cfg.padding      = 0.15f;
+  widget->config() = cfg;
+
+  ap::ColourScheme col;
+  col.nodeR         = 1.f;
+  col.nodeG         = 1.f;
+  col.nodeB         = 1.f;
+  col.nodeA         = 1.f;
+  col.shaftR        = 0.f;
+  col.shaftG        = 0.83f;
+  col.shaftB        = 0.67f;
+  col.shaftA        = 1.f;
+  col.headR         = 1.f;
+  col.headG         = 0.45f;
+  col.headB         = 0.f;
+  col.headA         = 1.f;
+  widget->colours() = col;
+
   vector<double> z, y, x;
-  for (U64 n = from; n <= to; ++n) {
-    std::cout << "seed = " << n << '\n';
-    for (auto i : CollatzCube<U64, U64>::get_path_index_from_seed(n)) {
-      z.push_back(i.z);
-      y.push_back(i.y);
-      x.push_back(i.x);
-    }
-  }
-  matplot::stem3(x, y, z);
-  matplot::show();
+  for (U64 n = from; n <= to; ++n)
+    for (auto i : CollatzCube<U64, U64>::get_path_index_from_seed(n)) widget->plot().add(i.x, i.y, i.z);
+  w.show();
+  app.exec();
 }
 
 int main(int argc, const char **argv) {
@@ -86,7 +129,8 @@ int main(int argc, const char **argv) {
 
   } else if (mode == "path") {
     U64 from = argc > 2 ? stoull(argv[2]) : 1;
-    if (argc > 3) stoull(argv[3]);
+    U64 to;
+    if (argc > 3) to = stoull(argv[3]);
     else {
       do_path(from, from);
       return 0;
