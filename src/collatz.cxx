@@ -78,7 +78,7 @@ static void do_path(U64 from, U64 to) {
   w.setCentralWidget(widget);
 
   ap::Config cfg;
-  cfg.nodeRadius   = 0.05f;
+  cfg.nodeRadius   = 0.032f;
   cfg.sphereStacks = 16;
   cfg.sphereSlices = 24;
   cfg.shaftRadius  = 0.012f;

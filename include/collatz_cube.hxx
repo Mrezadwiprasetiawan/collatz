@@ -59,6 +59,7 @@ struct CollatzCube {
       ++k;
       k >>= 1;
     }
+    res.push_back(Pos3<Id>(0, 0, 0));
     return res;
   }
 };
